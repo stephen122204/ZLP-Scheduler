@@ -9,13 +9,14 @@ minimum‑conflict fallback when no gap exists.
 
 ## Table of Contents
 1. [Purpose](#purpose)
-2. [Features](#features)
-3. [Quick Start](#quick-start)
-4. [Input Format](#input-format)
-5. [Example Session](#example-session)
-6. [Algorithms & Complexity](#algorithms--complexity)
-7. [Assumptions & Limitations](#assumptions--limitations)
-8. [Code Walk‑Through](#code-walk‑through)
+2. [Design Rationale](#design-rationale)
+3. [Features](#features)
+4. [Quick Start](#quick-start)
+5. [Input Format](#input-format)
+6. [Example Session](#example-session)
+7. [Algorithms & Complexity](#algorithms--complexity)
+8. [Assumptions & Limitations](#assumptions--limitations)
+9. [Code Walk‑Through](#code-walk‑through)
 
 ---
 
@@ -24,8 +25,71 @@ Students in the Zachry Leadership Program juggle tightly‑packed lectures *
 labs. This tool:
 
 * **Detects time conflicts** across all entered sections  
-* **Prints every 100‑minute gap** (per weekday) suitable for study/meetings  
+* **Prints every 100‑minute gap** (per weekday) suitable for class meetings  
 * When no gap exists, suggests the **start time(s) with the fewest overlaps**
+
+---
+
+## Design Rationale — How the Scheduler Thinks
+
+### 1  Input First, Optimize Later  
+*The hardest part of this task is not computation—it’s getting clean input.*  
+Every line the user types is immediately **validated with regular expressions** so
+bad data is rejected early (wrong course code, illegal time, missing fields).
+
+### 2  Conflict Detection: Simple but Sufficient  
+We could build fancy interval trees, but a typical student enters **dozens,
+not thousands**, of sections.
+
+* **Implementation:** compare **every pair of sections** belonging to *different*
+  courses; mark both if they overlap on at least one common weekday.  
+* **Cost:** \(O(n^{2})\) comparisons. With *n* ≈ 30‑60, this is effectively
+  instant ( < 1 ms ).
+
+### 3  Building the “Busy Grid” (One Section per Course)  
+To find study gaps we need a *single* active section per course.  
+Exhaustively testing every combination is exponential, so we use a
+**greedy earliest‑fit heuristic**:
+
+1. Sort courses alphabetically for deterministic output.  
+2. For each course, scan its sections **earliest → latest**.  
+3. Pick the **first** section that does **not** clash with any section already
+   accepted.  
+4. Record its time block in a per‑weekday “busy” list.
+
+*Trade‑off:*  
+Greedy may skip a global optimum, but guarantees a fast answer and is
+good enough for diagnostic “where are my gaps?” queries.
+
+### 4  Scanning for 100‑Minute Windows  
+The working day’s start grid is fixed: every 5 minutes from **08 : 00 → 17 : 00**.
+That’s **109 candidate start times** per day—tiny.
+
+* For each weekday, slide a 100‑minute window across those 109 starts.  
+* If a window overlaps **zero** busy intervals → list it as a free slot.  
+* If *all* windows clash, count overlaps at each start and report the
+  **minimum‑conflict start time(s)**.
+
+Because the grid is so small, this is plain **brute‑force**:  
+\(109 × d\) interval checks, where *d* = merged busy intervals on that day
+(often < 10).
+
+### 5  Sorting the Conflict Report  
+Users think chronologically, so the conflict list is **sorted by start time**,
+then course code, then day string. This post‑processing step makes the
+output readable without affecting complexity.
+
+---
+
+**Why not use heavier algorithms?**  
+* Sweep‑line or segment‑tree structures drop the conflict test to
+  \(O(n log n)\) but add code complexity.  
+* Exact timetable optimisation is NP‑hard and overkill when students mainly
+  want to *see* why sections clash.
+
+For ≤ 100 sections the current mix (regex validation + pairwise test +
+greedy + grid brute force) finishes in well under a second and keeps the code
+short and maintainable.
 
 ---
 
