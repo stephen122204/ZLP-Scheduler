@@ -16,8 +16,6 @@ minimum‑conflict fallback when no gap exists.
 6. [Algorithms & Complexity](#algorithms--complexity)
 7. [Assumptions & Limitations](#assumptions--limitations)
 8. [Code Walk‑Through](#code-walk‑through)
-9. [Contributing](#contributing)
-10. [License](#license)
 
 ---
 
@@ -137,24 +135,5 @@ The key logic lives in **`schedule.py`**.
 | 4. Greedy pass: choose first non‑clashing section per course to populate busy grid. |
 | 5. For each weekday:<br>• list free blocks, or<br>• show min‑conflict start(s). |
 
----
-
-## Contributing
-Pull requests welcome—please open an issue for major changes first.
-
----
-
-## License
-*(Replace with a license of your choice—MIT example below)*
-
-```
-MIT License
-
-Copyright (c) 2025 …
-
-Permission is hereby granted, free of charge, to any person obtaining a copy…
-```
-
----
 
 *Happy scheduling!*
