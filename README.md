@@ -30,6 +30,7 @@ to graduate within a timely manner. This tool:
 
 ---
 
+<a id="design-rationale"></a>
 ## Design Rationale — How the Scheduler Thinks
 
 ### 1  Input First, Optimize Later  
