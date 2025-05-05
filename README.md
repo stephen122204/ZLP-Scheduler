@@ -156,7 +156,7 @@ Thursday:
 ```
 
 ---
-<a id="algorithms--complexity"></a>
+<a id="algorithms-complexity"></a>
 ## Algorithms & Complexity
 | Phase | Technique | Worst‑Case Time |
 |-------|-----------|-----------------|
@@ -169,7 +169,7 @@ Thursday:
 for typical (< 100) section counts.
 
 ---
-<a id="assumptions--limitations"></a>
+<a id="assumptions-limitations"></a>
 ## Assumptions & Limitations
 * **User‑provided data** – You must enter *all* candidate sections; omissions
   aren’t checked.
