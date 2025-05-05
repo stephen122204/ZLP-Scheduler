@@ -97,7 +97,7 @@ short and maintainable.
 | ✔ | Description |
 |---|-------------|
 | Conflict detection | Flags overlapping sections on any common weekday |
-| Lab support | Accepts codes like `MEEN 221L` in addition to `MEEN 221` |
+| Lab support | Accepts codes like `ECEN 214L` in addition to `ECEN 214` |
 | Flexible grid | 5‑minute start grid, 08 : 00 – 17 : 00 inclusive |
 | Greedy fallback | Picks one viable section per course to build the gap grid |
 | Min‑conflict hint | Lists best start time(s) when a day is fully booked |
