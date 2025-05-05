@@ -202,4 +202,4 @@ The key logic lives in **`schedule.py`**.
 | 5. For each weekday:<br>• list free blocks, or<br>• show min‑conflict start(s). |
 
 
-*Happy scheduling!*
+*Happy scheduling! :D* 
