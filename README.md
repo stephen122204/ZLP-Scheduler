@@ -105,7 +105,7 @@ short and maintainable.
 | Pure CLI | Runs in any terminal—no GUI or external dependencies |
 
 ---
-
+<a id="quick-start"></a>
 ## Quick Start
 ```bash
 git clone https://github.com/<your‑user>/ZLP-Scheduler.git
@@ -114,7 +114,7 @@ python schedule.py
 ```
 
 ---
-
+<a id="input-format"></a>
 ## Input Format
 ```
 <SUBJ> <NUM|NUML> <DAYS> <HH:MM> <DURATION>
@@ -130,7 +130,7 @@ python schedule.py
 > Type **`done`** on its own line to finish entry.
 
 ---
-
+<a id="example-session"></a>
 ## Example Session
 ```text
 Enter every section …
@@ -156,7 +156,7 @@ Thursday:
 ```
 
 ---
-
+<a id="algorithms-&-complexity"></a>
 ## Algorithms & Complexity
 | Phase | Technique | Worst‑Case Time |
 |-------|-----------|-----------------|
@@ -169,7 +169,7 @@ Thursday:
 for typical (< 100) section counts.
 
 ---
-
+<a id="assumptions-&-limitations"></a>
 ## Assumptions & Limitations
 * **User‑provided data** – You must enter *all* candidate sections; omissions
   aren’t checked.
@@ -181,7 +181,7 @@ for typical (< 100) section counts.
   (`10:00‑10:50` vs `10:50‑…`) are considered non‑overlapping.
 
 ---
-
+<a id="code-walk-through"></a>
 ## Code Walk‑Through
 The key logic lives in **`schedule.py`**.
 
