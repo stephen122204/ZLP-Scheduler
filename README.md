@@ -63,6 +63,10 @@ operations, finishing in milliseconds.
 it reliably maximizes the number of study windows left after each decision
 and is far faster (and simpler) than an exact search or ILP solver.
 
+**IMPORTANT NOTE!** - The scheduler focuses solely on fitting a single 100‑minute cohort meeting each week. 
+It does not weigh honors sections, instructor quality, or personal convenience—only whether a section’s 
+time preserves the meeting window.
+
 ---
 
 ## Features
@@ -111,8 +115,8 @@ When you run the script it will detect that file and load it automatically.
 
 | Column name | Example value |
 |-------------|---------------|
-| **Subject** | `MEEN` |
-| **Number**  | `221` or `221L` |
+| **Subject** | `ECEN` |
+| **Number**  | `214` or `214L` |
 | **Days**    | `MWF`, `TR`, `R`, … |
 | **Start**   | `09:10` (24‑hour clock) |
 | **Duration**| `50` (minutes) |
@@ -126,7 +130,7 @@ entry.
 <a id="example-session"></a>
 ## Example Session
 ```text
-> MEEN 221   MWF 09:10 50
+> MEEN 225   MWF 09:10 50
 Success!
 > ECEN 214L  R   15:00 170
 Success!
@@ -155,7 +159,7 @@ Thursday:
 | Study‑slot scan | 101 grid points × merged intervals/day | ≈ **O(d · g)** per day |
 
 *`n` = total sections, `d` = merged busy intervals that weekday,
-`g` = 101 (08 : 00 → 16 : 10 every 5 min).  
+`g` = 101 (08:00 -> 16:10 every 5 min).  
 For typical inputs (*n* ≤ 100, *m* ≤ 5) the whole run finishes in ≪ 1 s.*
 
 ---
@@ -192,7 +196,7 @@ The core logic is in **`zlp_scheduler.py`**.
 | 3. Add all single‑option sections to the busy grid (mandatory). |
 | 4. **Best‑gap greedy loop**: score every candidate section, pick the one that preserves the most study windows, add it to the grid; repeat until each course has exactly one section. |
 | 5. Merge busy intervals per weekday. |
-| 6. Scan the 5‑minute grid (08 : 00 – 16 : 10): <br>• If ≥ 1 day has free blocks → print only those blocks per day.<br>• Else → print the start time(s) with the minimum overlaps per day. |
+| 6. Scan the 5‑minute grid (08:00 – 16:10): <br>• If ≥ 1 day has free blocks → print only those blocks per day.<br>• Else → print the start time(s) with the minimum overlaps per day. |
 
 
 *Happy scheduling! :D* 
