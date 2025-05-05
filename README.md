@@ -44,7 +44,7 @@ not thousands**, of sections.
 
 * **Implementation:** compare **every pair of sections** belonging to *different*
   courses; mark both if they overlap on at least one common weekday.  
-* **Cost:** `O(n^2)` comparisons. With *n* ≈ 30‑60, this is effectively
+* **Cost:** `O(n²)` comparisons. With *n* ≈ 30‑60, this is effectively
   instant (< 1 ms).
 
 ### 3  Building the “Busy Grid” (One Section per Course)  
@@ -84,7 +84,7 @@ output readable without affecting complexity.
 
 **Why not use heavier algorithms?**  
 * Sweep‑line or segment‑tree structures drop the conflict test to
-  `(O(n log n))` but add code complexity. Runtime optimization is not crucial for this code’s implementation.
+  `(O(nlogn))` but add code complexity. Runtime optimization is not crucial for this code’s implementation.
 * Exact timetable optimization is NP‑hard and overkill when students mainly
   want to *see* why sections clash.
 
@@ -99,7 +99,7 @@ short and maintainable.
 |---|-------------|
 | Conflict detection | Flags overlapping sections on any common weekday |
 | Lab support | Accepts codes like `ECEN 214L` in addition to `ECEN 214` |
-| Flexible grid | 5‑minute start grid, 08 : 00 – 17 : 00 inclusive |
+| Flexible grid | 5‑minute start grid, 08:00 – 17:00 inclusive |
 | Greedy fallback | Picks one viable section per course to build the gap grid |
 | Min‑conflict hint | Lists best start time(s) when a day is fully booked |
 | Pure CLI | Runs in any terminal—no GUI or external dependencies |
@@ -110,7 +110,7 @@ short and maintainable.
 ```bash
 git clone https://github.com/<your‑user>/ZLP-Scheduler.git
 cd ZLP-Scheduler
-python schedule.py
+python zlp_scheduler.py
 ```
 
 ---
