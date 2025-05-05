@@ -154,7 +154,7 @@ Thursday:
 | Phase | Technique | Worst‑Case Time |
 |-------|-----------|-----------------|
 | Parsing | Regex validation | **O(n)** |
-| Busy‑grid merge | Per‑day sort + sweep | **O(n*logn)** |
+| Busy‑grid merge | Per‑day sort + sweep | **O(n · logn)** |
 | **Section selection** | *Best‑gap greedy* — score every candidate section, pick the one that preserves the most study windows | **O(n · m · g)** ≈ **O(n²)**<br>where *m* = avg sections/course, *g* = 101 grid points |
 | Study‑slot scan | 101 grid points × merged intervals/day | ≈ **O(d · g)** per day |
 
