@@ -2,7 +2,7 @@
 
 Python CLI that flags course‑section conflicts and finds **100‑minute** class meeting
 windows for the Zachry Leadership Program.  
-Supports 8:00am – 4:10pm starts, 5‑minute grid, per‑day availability, and a
+Supports 8:00am – 4:10pm start times, 5‑minute grid, per‑day availability, and a
 minimum‑conflict fallback when no gap exists.
 
 ---
@@ -13,7 +13,7 @@ minimum‑conflict fallback when no gap exists.
 3. [Features](#features)
 4. [Quick Start](#quick-start)
 5. [Input Format](#input-format)
-6. [Spreadsheet Input](spreadsheet-input)
+6. [Spreadsheet Input](#spreadsheet-input)
 7. [Example Session](#example-session)
 8. [Algorithms & Complexity](#algorithms-complexity)
 9. [Assumptions & Limitations](#assumptions-limitations)
