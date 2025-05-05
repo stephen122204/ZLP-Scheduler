@@ -14,9 +14,9 @@ minimum‑conflict fallback when no gap exists.
 4. [Quick Start](#quick-start)
 5. [Input Format](#input-format)
 6. [Example Session](#example-session)
-7. [Algorithms & Complexity](#algorithms--complexity)
-8. [Assumptions & Limitations](#assumptions--limitations)
-9. [Code Walk‑Through](#code-walk‑through)
+7. [Algorithms & Complexity](#algorithms-complexity)
+8. [Assumptions & Limitations](#assumptions-limitations)
+9. [Code Walk‑Through](#code-walkthrough)
 
 ---
 
@@ -156,7 +156,7 @@ Thursday:
 ```
 
 ---
-<a id="algorithms-&-complexity"></a>
+<a id="algorithms--complexity"></a>
 ## Algorithms & Complexity
 | Phase | Technique | Worst‑Case Time |
 |-------|-----------|-----------------|
@@ -169,7 +169,7 @@ Thursday:
 for typical (< 100) section counts.
 
 ---
-<a id="assumptions-&-limitations"></a>
+<a id="assumptions--limitations"></a>
 ## Assumptions & Limitations
 * **User‑provided data** – You must enter *all* candidate sections; omissions
   aren’t checked.
@@ -181,7 +181,7 @@ for typical (< 100) section counts.
   (`10:00‑10:50` vs `10:50‑…`) are considered non‑overlapping.
 
 ---
-<a id="code-walk-through"></a>
+<a id="code-walkthrough"></a>
 ## Code Walk‑Through
 The key logic lives in **`schedule.py`**.
 
