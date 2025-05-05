@@ -75,7 +75,7 @@ time preserves the meeting window.
 | Conflict‑free gaps | Lists every 100‑min block that overlaps *zero* sections |
 | Lab support | Accepts codes like `ECEN 214L` as well as `ECEN 214` |
 | Flexible grid | 5‑minute start grid, **08:00 – 16:10** inclusive |
-| Best‑gap greedy | Chooses **one** section per multi‑section course to keep the most study windows |
+| Best‑gap greedy | Chooses **one** section per multi‑section course to keep the most meeting windows |
 | Min‑conflict fallback | Shows least‑bad start time(s) only when no gap exists |
 | Pure CLI | Runs in any terminal—no GUI, no external services |
 
