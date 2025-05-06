@@ -160,7 +160,7 @@ Thursday:
 
 *`n` = total sections, `d` = merged busy intervals that weekday,
 `g` = 101 (08:00 -> 16:10 every 5 min).  
-For typical inputs (*n* ≤ 100, *m* ≤ 5) the whole run finishes in ≪ 1 s.*
+For typical inputs (*n* ≤ 100, *m* ≤ 5) the whole run finishes in < 1 s.*
 
 ---
 
