@@ -167,7 +167,7 @@ For typical inputs (*n* ≤ 100, *m* ≤ 5) the whole run finishes in 
 <a id="assumptions-limitations"></a>
 ## Assumptions & Limitations
 * **You supply all candidate sections** – the script can’t fetch catalog data.
-* **Fixed meeting grid** – only start times **08 : 00 – 16 : 10** are tested.
+* **Fixed meeting grid** – only start times **08:00 – 16:10** are tested.
 * **Best‑gap greedy** – chooses one section per multi‑section course via a
   heuristic; a global optimum is NP‑hard and out‑of‑scope.
 * **Half‑open intervals** – a class ending at 10:50 and one starting at
@@ -182,7 +182,7 @@ The core logic is in **`zlp_scheduler.py`**.
 | Section | What it does |
 |---------|--------------|
 | **Imports & Regexes** | `re` for validation; `^\d{3}[Ll]?$` accepts lab codes (`221L`). |
-| **Global constants** | `GRID_START = 08 : 00`, `GRID_END = 16 : 10`, `BLOCK_LEN = 100`, `STEP_MIN = 5`. |
+| **Global constants** | `GRID_START = 08:00`, `GRID_END = 16:10`, `BLOCK_LEN = 100`, `STEP_MIN = 5`. |
 | **Helper functions** | |
 | – `to_minutes`, `to_hhmm` | Convert `"HH:MM"` ↔︎ integer minutes. |
 | – `overlaps()` | Half‑open interval overlap test. |
