@@ -203,7 +203,7 @@ def main()->None:
         busy={d:merge(v) for d,v in busy.items()}
         del options[best_course]
 
-    # ── scan for study windows ───────────────────────────────────────────
+    # ── scan for class windows ───────────────────────────────────────────
     free_any=False
     free_by_day, best_by_day={},{}
     for d in DAY_LETTERS:
