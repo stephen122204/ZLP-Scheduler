@@ -60,7 +60,7 @@ cheap:
 operations, finishing in milliseconds.
 
 *Trade‑off:* this heuristic is not guaranteed to find the global optimum, but
-it reliably maximizes the number of study windows left after each decision
+it reliably maximizes the number of meeting windows left after each decision
 and is far faster (and simpler) than an exact search or ILP solver.
 
 **IMPORTANT NOTE!** - The scheduler focuses solely on fitting a single 100‑minute cohort meeting each week. 
@@ -96,7 +96,7 @@ cd ZLP-Scheduler
 | `SUBJ`     | Four letters (e.g. `ECEN`)                                           |
 | `NUM`      | Three digits, optional trailing **`L`** for labs (`214`, `214L`)     |
 | `DAYS`     | Any combo of **M T W R F** (`MWF`, `TR`, `R`, …)                     |
-| `HH:MM`    | 24‑hour start — **no range limit** (the grid limit applies only to study blocks) |
+| `HH:MM`    | 24‑hour start — **no range limit** (the grid limit applies only to meeting blocks) |
 | `DURATION` | Positive integer minutes                                             |
 
 > Type **`done`** on its own line to finish manual entry.
@@ -155,8 +155,8 @@ Thursday:
 |-------|-----------|-----------------|
 | Parsing | Regex validation | **O(n)** |
 | Busy‑grid merge | Per‑day sort + sweep | **O(n · logn)** |
-| **Section selection** | *Best‑gap greedy* — score every candidate section, pick the one that preserves the most study windows | **O(n · m · g)** ≈ **O(n²)**<br>where *m* = avg sections/course, *g* = 101 grid points |
-| Study‑slot scan | 101 grid points × merged intervals/day | ≈ **O(d · g)** per day |
+| **Section selection** | *Best‑gap greedy* — score every candidate section, pick the one that preserves the most meeting windows | **O(n · m · g)** ≈ **O(n²)**<br>where *m* = avg sections/course, *g* = 101 grid points |
+| Meeting‑slot scan | 101 grid points × merged intervals/day | ≈ **O(d · g)** per day |
 
 *`n` = total sections, `d` = merged busy intervals that weekday,
 `g` = 101 (08:00 -> 16:10 every 5 min).  
@@ -167,7 +167,7 @@ For typical inputs (*n* ≤ 100, *m* ≤ 5) the whole run finishes in 
 <a id="assumptions-limitations"></a>
 ## Assumptions & Limitations
 * **You supply all candidate sections** – the script can’t fetch catalog data.
-* **Fixed study grid** – only start times **08 : 00 – 16 : 10** are tested.
+* **Fixed meeting grid** – only start times **08 : 00 – 16 : 10** are tested.
 * **Best‑gap greedy** – chooses one section per multi‑section course via a
   heuristic; a global optimum is NP‑hard and out‑of‑scope.
 * **Half‑open intervals** – a class ending at 10:50 and one starting at
@@ -194,7 +194,7 @@ The core logic is in **`zlp_scheduler.py`**.
 | 1. Load spreadsheet (auto) or prompt for path or manual lines. |
 | 2. **Split courses** → single‑option vs multi‑option. |
 | 3. Add all single‑option sections to the busy grid (mandatory). |
-| 4. **Best‑gap greedy loop**: score every candidate section, pick the one that preserves the most study windows, add it to the grid; repeat until each course has exactly one section. |
+| 4. **Best‑gap greedy loop**: score every candidate section, pick the one that preserves the most meeting windows, add it to the grid; repeat until each course has exactly one section. |
 | 5. Merge busy intervals per weekday. |
 | 6. Scan the 5‑minute grid (08:00 – 16:10): <br>• If ≥ 1 day has free blocks → print only those blocks per day.<br>• Else → print the start time(s) with the minimum overlaps per day. |
 
