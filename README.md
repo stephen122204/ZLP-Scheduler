@@ -108,7 +108,8 @@ cd ZLP-Scheduler
 
 Instead of typing sections line‑by‑line you can place a file named
 **`sections.xlsx`**, **`sections.xls`**, or **`sections.csv`** in the **same
-folder** as `zlp_scheduler.py`.  
+folder** as `zlp_scheduler.py`. I have also included a sample **`sections.xlsx`** file
+in this repository.
 When you run the script it will detect that file and load it automatically.
 
 ### Required columns (first worksheet / first sheet)
