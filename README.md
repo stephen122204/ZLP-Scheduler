@@ -33,7 +33,7 @@ to graduate within a timely manner. This tool:
 ---
 
 <a id="design-rationale"></a>
-## Design Rationale — Greedy Heurestic Algorithm
+## Design Rationale — Greedy Heuristic Algorithm
 
 Many courses (e.g. labs) offer several sections.  
 Scanning every combination is exponential, so we use a **gap‑preserving
@@ -54,9 +54,9 @@ greedy** heuristic:
 
 4. **Repeat** until every multi‑section course has exactly one chosen section.
 
-Because there are only **101 grid points** to test, the score calculation is
+Because there are only **99 grid points** to test, the score calculation is
 cheap:  
-`courses × sections × 101` interval checks – typically a few thousand
+`courses × sections × 99` interval checks – typically a few thousand
 operations, finishing in milliseconds.
 
 *Trade‑off:* this heuristic is not guaranteed to find the global optimum, but
