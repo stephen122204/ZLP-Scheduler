@@ -166,12 +166,31 @@ For typical inputs (*n* ≤ 100, *m* ≤ 5) the whole run finishes in 
 
 <a id="assumptions-limitations"></a>
 ## Assumptions & Limitations
-* **You supply all candidate sections** – the script can’t fetch catalog data.
-* **Fixed meeting grid** – only start times **08:00 – 16:10** are tested.
-* **Best‑gap greedy** – chooses one section per multi‑section course via a
-  heuristic; a global optimum is NP‑hard and out‑of‑scope.
+* **You supply all candidate sections** – the script can’t fetch catalog data as I currently don't know how to access Aggie Schedule Builder API
+* **Fixed meeting grid** – only start times **08:00 – 16:10** are tested (99 possible start points on current grid model).
 * **Half‑open intervals** – a class ending at 10:50 and one starting at
   10:50 do **not** overlap.
+
+---
+
+## Known Limitation — Coupled Lecture / Lab Sections 
+
+Some courses (e.g., **ECEN 214**, **CSCE 221**) include a **lecture** and a **lab** that must be taken **together as a matched pair**.  
+At present, the scheduler treats every row as an **independent section**, so it may accidentally “mix and match” a lecture from one section with a lab from another.  
+For many **small-major** schedules—where there is typically one lecture and labs are effectively "independent"—this behavior is acceptable, but it is not correct for courses where the **lecture choice constrains** the allowed lab times.
+
+### Examples
+- Lecture MWF 09:10 + Lab R 15:00 or Lecture MWF 09:10 + Lab W 12:00  (single lecture, multiple labs)  
+- Lecture MWF 10:20 + Lab TR at 14:20 or Lecture MWF 10:20 + Lab TR 18:30  (lab tied to that lecture’s section)  
+- Some courses split labs across two days --> the **paired meeting times** travel with the section.
+
+### Why It’s Not Handled Yet
+The current greedy logic optimizes study-window availability assuming each section is selectable independently.  
+It does not model **bundles** (lecture + lab) or rules like *“if lecture A is chosen, then lab must be in {L1, L2}.”*
+
+**Context:**  
+For smaller majors that usually have a single lecture and labs that rarely overlap, this behavior has minimal impact.  
+If mismatched lecture–lab pairings appear consistently in future inputs, a **bundle-aware patch** will be developed to link lecture–lab sections together and ensure correct selection.
 
 
 ---
