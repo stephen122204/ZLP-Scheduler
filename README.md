@@ -65,7 +65,7 @@ This avoids a greedy approach where early course selections are locked in and ne
 
 **1) Clone**
 ```bash
-git clone https://github.com/Stephen-Abkin-TAMU/ZLP-Scheduler.git
+git clone https://github.com/stephen122204/ZLP-Scheduler.git
 cd ZLP-Scheduler
 ```
 **2) Install Dependencies**
