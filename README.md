@@ -1,7 +1,7 @@
 # ZLP‑Scheduler
 
-A Python CLI tool that helps Zachry Leadership Program (ZLP) students find viable 100-minute weekly meeting windows 
-given a set of candidate class sections. It detects conflicts, accounts for inseparable lecture+lab bundles, and produces 
+A Python CLI tool that helps the Zachry Leadership Program (ZLP) students find viable 100-minute weekly meeting windows 
+given a set of class sections. It detects conflicts, accounts for inseparable lecture+lab bundles, and produces 
 both a terminal summary and an Excel report (heatmap + top meeting-time ranges).
 
 ---
@@ -19,16 +19,17 @@ both a terminal summary and an Excel report (heatmap + top meeting-time ranges).
 
 ZLP students often operate under dense course schedules with limited flexibility across sections.
 The ZLP-Scheduler is designed to make these constraints visible and actionable by answering a single, practical question:
-   _When can a 100-minute cohort meeting fit, and what tradeoffs does each possible time impose?_
+   
+   **_When can a 100-minute cohort meeting fit, and what tradeoffs does each possible time impose?_**
 
-Rather than optimizing for personal preferences, the scheduler evaluates time feasibility only—highlighting conflicts, restricted options, and unavoidable overlaps. It does not rank instructors, honors sections, or convenience; all courses are weighted as equal. Rather, the goal of this script is to simply determine whether and how a meeting time can fit within existing constraints.
+Rather than optimizing for personal preferences, the scheduler evaluates time feasibility only, highlighting conflicts, restricted options, and unavoidable overlaps. It does not rank instructors, honors sections, or convenience; all courses are weighted as equal. Rather, the goal of this script is to simply determine whether and how a meeting time can fit within existing constraints.
 
 ---
 
 <a id="design-rationale"></a>
 ## Design Rationale
 
-Trying every possible combination of courses by hand is tedious, and trying every possible combination of sections across courses is done in **O(n²)** (slow). 
+Trying every possible combination of courses by hand is tedious, and trying every possible combination of sections across courses quickly becomes exponential in time complexity, which is computationally infeasable. 
 Instead of choosing a full schedule directly, the ZLP-Scheduler evaluates specific 100-minute meeting windows and measures conflicts relative to each window. 
 This avoids a greedy approach where early course selections are locked in and never reevaluated as additional courses introduce new conflicts.
 
@@ -42,10 +43,11 @@ This avoids a greedy approach where early course selections are locked in and ne
    * Unlike earlier greedy logic that locked in choices based on local optimality, this approach scores options by their impact on
      global meeting-window feasibility and avoids early commitments that block better outcomes later.
 
-- **Meeting-Time-Centric Reporting**  
+- **Meeting-Time-Centric Reporting**
+  
    For every candidate 100-minute meeting start time (every 5-minutes Mon-Fri), the report shows:
    * _Unavoidable Conflicts_: Courses where every option overlaps the meeting block
-   * _Blocked courses_: Courses that remain possible but with reduced option flexibility due to the meeting time.
+   * _Blocked courses_: Courses that remain possible but with reduced option flexibility due to the meeting time
    * A ranked list of best meeting-time ranges and a **heatmap** of conflict scores
 
 
@@ -71,9 +73,12 @@ cd ZLP-Scheduler
 python -m pip install pandas openpyxl
 ```
 **3) Add Your Spreadsheet**
+
 Place your input file in the same folder as `zlp_scheduler.py`:
 - `sections.xlsx` (default)
 - or `.xls` / `.csv`
+
+**Note:** If a file named `sections.xlsx` is not found, the terminal interface will prompt you to enter the name of the spreadsheet to load.
 
 **4) Run**
 ```bash
@@ -86,8 +91,9 @@ python zlp_scheduler.py
 <a id="spreadsheet-input-format"></a>
 ## Spreadsheet Input Format
 
-**Required Columns (case-sensitive)**
+*Note:* A sample template is included in this repository titled `sections.xlsx`.
 
+**Required Columns (case-sensitive)**
 |  Column  | Example |                Notes                |
 |----------|---------|-------------------------------------|
 | Subject  | ECEN    | 4-letter subject code               |
@@ -95,6 +101,7 @@ python zlp_scheduler.py
 | Days     | MWF, TR | any combo of M, T, W, R, F          |
 | Start    | 09:10   | 24-hour HH:MM format                |
 | Duration | 50      | minutes                             |
+
 
 **Optional Lab Bundling Columns (recommended for lecture+lab courses)**
 
@@ -109,6 +116,8 @@ If your course has a lab that must be taken with the lecture, include these colu
 
 **Interpretation:** Each row becomes one “Option.” If `Lab=Y`, the lecture and lab are treated as an inseparable bundle; if `Lab=N`, blank, or otherwise falsy, the row is treated as a lecture-only option and any lab columns are ignored.
 
+**Important:** Time fields (`Start`, `Lab_Start`) must be entered as **plain text in 24-hour `HH:MM` format** (e.g., `13:30`). Do not use Excel's built-in time formatting, as automatic time objects are not supported.
+
 ---
 
 <a id="outputs"></a>
@@ -116,16 +125,18 @@ If your course has a lab that must be taken with the lecture, include these colu
 
 **Terminal Output**
 - Prints any fully conflict-free 100-minute windows if they exist
-- Always prints a ranked set of candidate start-time ranges (top meeting-time ranges)
-- Spotlights meeting ranges with low unavoidable conflict scores
+- Always prints a *Top 10* ranked set of top meeting-time ranges
+- If additional meeting times have **≤ 2 unavoidable conflicts**, all such times are printed, even if this exceeds the top 10
+- Highlights meeting ranges with low unavoidable conflict scores
 
 **Excel Output**
+
 Creates `zlp_results.xlsx` containing:
 
 1. **Heatmap** (rows = start times, columns = weekdays)  
    Values = number of unavoidable conflicts (score)
 
-2. **Top Ranges Table** including:
+2. **Best Meeting-Time Ranges Table** including:
    - Score (unavoidable conflicts)
    - Conflicting courses
    - Blocked course count
