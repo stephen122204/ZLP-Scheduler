@@ -33,7 +33,7 @@ to graduate within a timely manner. This tool:
 ---
 
 <a id="design-rationale"></a>
-## Design Rationale — Greedy Heuristic Algorithm
+## Design Rationale —> Greedy Heuristic Algorithm
 
 Many courses (e.g. labs) offer several sections.  
 Scanning every combination is exponential, so we use a **gap‑preserving
@@ -64,7 +64,7 @@ it reliably maximizes the number of meeting windows left after each decision
 and is far faster (and simpler) than an exact search or ILP solver.
 
 **IMPORTANT NOTE!** - The scheduler focuses solely on fitting a single 100‑minute cohort meeting each week. 
-It does not weigh honors sections, instructor quality, or personal convenience—only whether a section’s 
+It does not weigh honors sections, instructor quality, or personal convenience. Rather, only whether a section’s 
 time preserves the meeting window.
 
 ---
@@ -156,11 +156,11 @@ Thursday:
 |-------|-----------|-----------------|
 | Parsing | Regex validation | **O(n)** |
 | Busy‑grid merge | Per‑day sort + sweep | **O(n · logn)** |
-| **Section selection** | *Best‑gap greedy* — score every candidate section, pick the one that preserves the most meeting windows | **O(n · m · g)** ≈ **O(n²)**<br>where *m* = avg sections/course, *g* = 101 grid points |
-| Meeting‑slot scan | 101 grid points × merged intervals/day | ≈ **O(d · g)** per day |
+| **Section selection** | *Best‑gap greedy* —> score every candidate section, pick the one that preserves the most meeting windows | **O(n · m · g)** ≈ **O(n²)**<br>where *m* = avg sections/course, *g* = 99 grid points |
+| Meeting‑slot scan | 99 grid points × merged intervals/day | ≈ **O(d · g)** per day |
 
 *`n` = total sections, `d` = merged busy intervals that weekday,
-`g` = 101 (08:00 -> 16:10 every 5 min).  
+`g` = 99 (08:00 -> 16:10 every 5 min).  
 For typical inputs (*n* ≤ 100, *m* ≤ 5) the whole run finishes in < 1 s.*
 
 ---
