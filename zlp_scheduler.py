@@ -363,10 +363,7 @@ def best_conflicts_and_blocked_for_block(
 # ─────────────────────────────────────────────────────────────
 # Reporting: top 10 + heatmap spreadsheet
 # ─────────────────────────────────────────────────────────────
-def generate_reports(
-    sections_all: Dict[str, List[Option]],
-    busy_raw: Dict[str, List[Tuple[int,int,str]]]
-) -> None:
+def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
     """
     Meeting-time-centric reporting.
 
@@ -615,112 +612,8 @@ def main() -> None:
     # keep all options for optimistic check
     sections_all = sections
 
-    # Split courses:
-    mandatory = {c: opts[0] for c, opts in sections.items() if len(opts) == 1}
-    options   = {c: opts[:]  for c, opts in sections.items() if len(opts) > 1}
-
-    busy = {d: [] for d in DAY_LETTERS}            # merged intervals
-    busy_raw = {d: [] for d in DAY_LETTERS}        # labeled by course code
-
-    # Add mandatory options first
-    for opt in mandatory.values():
-        for mtg in opt.meetings:
-            iv = (mtg.start, mtg.start + mtg.dur)
-            for d in mtg.days:
-                busy[d].append(iv)
-                busy_raw[d].append((iv[0], iv[1], opt.course))
-    busy = {d: merge(v) for d, v in busy.items()}
-
-    chosen: Dict[str, Option] = {}
-
-    # Greedy selection across multi-option courses
-    while options:
-        best_course = None
-        best_opt: Optional[Option] = None
-        best_free   = -1
-        best_conf   = 10**9
-
-        for course, lst in options.items():
-            for cand in lst:
-                cand_free, cand_conf = windows_after_add(cand, busy, busy_raw)
-                if (cand_free > best_free) or (cand_free == best_free and cand_conf < best_conf):
-                    best_course = course
-                    best_opt    = cand
-                    best_free   = cand_free
-                    best_conf   = cand_conf
-                elif (cand_free == best_free and cand_conf == best_conf and best_opt is not None):
-                    # deterministic tie-break: earlier first meeting start
-                    cand_first = min(m.start for m in cand.meetings)
-                    best_first = min(m.start for m in best_opt.meetings)
-                    if cand_first < best_first:
-                        best_course = course
-                        best_opt    = cand
-
-        assert best_course is not None and best_opt is not None
-
-        chosen[best_course] = best_opt
-        for mtg in best_opt.meetings:
-            iv = (mtg.start, mtg.start + mtg.dur)
-            for d in mtg.days:
-                busy[d].append(iv)
-                busy_raw[d].append((iv[0], iv[1], best_opt.course))
-        busy = {d: merge(v) for d, v in busy.items()}
-        del options[best_course]
-
-    # Find fully free blocks (simple case)
-    free_any = False
-    free_by_day = {}
-    for d in DAY_LETTERS:
-        free, _, _ = free_and_min_conflict(busy[d])
-        free_by_day[d] = free
-        if free:
-            free_any = True
-
-    print("\n100-minute meeting blocks (start 08:00-16:10):")
-    if free_any:
-        for d in DAY_LETTERS:
-            if free_by_day[d]:
-                print(f"{DAY_NAMES[d]}:")
-                for s,e in free_by_day[d]:
-                    print(f"  {to_hhmm(s)} – {to_hhmm(e)}")
-    else:
-        # optimistic reporting (same as before, just option-aware now)
-        for d in DAY_LETTERS:
-            day_labeled = busy_raw[d]
-            if not day_labeled:
-                continue
-
-            best_starts: List[int] = []
-            best_cnt = float('inf')
-            best_conflict_lists: Dict[int, List[Tuple[str,int,int]]] = {}
-
-            for st in range(GRID_START, GRID_END+1, STEP_MIN):
-                remaining = adjusted_conflicts_for_start(st, day_labeled, sections_all, d)
-                cnt = len(remaining)
-                if cnt < best_cnt:
-                    best_cnt = cnt
-                    best_starts = [st]
-                    best_conflict_lists = {st: remaining}
-                elif cnt == best_cnt:
-                    best_starts.append(st)
-                    best_conflict_lists[st] = remaining
-
-            if not best_starts:
-                continue
-
-            print(f"{DAY_NAMES[d]}: minimum conflicts = {best_cnt}")
-            print(f"  Optimal start times: {format_start_span(best_starts)}")
-            first_st = sorted(best_starts)[0]
-            conflicts = best_conflict_lists[first_st]
-            print("  Conflicting classes:")
-            if not conflicts:
-                print("    • (none)")
-            else:
-                for code, ss, ee in conflicts:
-                    print(f"    • {code} (start {to_hhmm(ss)}, {ee-ss} min)")
-
-    # Always generate top10 + heatmap report 
-    generate_reports(sections_all, busy_raw)
+    # 2) Generate reports
+    generate_reports(sections_all)
 
 if __name__=="__main__":
     main()
