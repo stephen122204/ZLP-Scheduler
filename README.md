@@ -36,16 +36,16 @@ This avoids a greedy approach where early course selections are locked in and ne
 - **Bundled Options**  
    * Each spreadsheet row is treated as a single option for a course.
    * An option may include both lecture and lab meetings, which are treated as inseparable.
+ 
+- **Cracking-Based Evaluation (Meeting-Centric)**  
+  * The scheduler does not construct a full course schedule or lock in section choices.
+  * For each 100-minute meeting window, courses are allowed to shift between available options when possible.
+  * A course is counted as a conflict only if **every** option overlaps the meeting window.
+  * This approach avoids greedy placement entirely and ensures that meeting times are evaluated independently and fairly.
 
-- **Greedy Baseline (window-preserving)**  
-   * Courses with only one option are locked first.  
-   * For multi-option courses, the scheduler selects options that preserve overall meeting-window availability, yielding fast and deterministic behavior.
-   * Unlike earlier greedy logic that locked in choices based on local optimality, this approach scores options by their impact on
-     global meeting-window feasibility and avoids early commitments that block better outcomes later.
-
-- **Meeting-Time-Centric Reporting**
+- **Cracking-Based Reporting**
   
-   For every candidate 100-minute meeting start time (every 5-minutes Mon-Fri), the report shows:
+   For every 100-minute meeting start time (every 5-minutes Mon-Fri), the report shows:
    * _Unavoidable Conflicts_: Courses where every option overlaps the meeting block
    * _Blocked courses_: Courses that remain possible but with reduced option flexibility due to the meeting time
    * A ranked list of best meeting-time ranges and a **heatmap** of conflict scores
