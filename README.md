@@ -124,8 +124,7 @@ If your course has a lab that must be taken with the lecture, include these colu
 ## Outputs
 
 **Terminal Output**
-- Prints any fully conflict-free 100-minute windows if they exist
-- Always prints a *Top 10* ranked set of top meeting-time ranges
+- Prints a *Top 10* ranked set of top meeting-time ranges (day, start range, and score only)
 - If additional meeting times have **≤ 2 unavoidable conflicts**, all such times are printed, even if this exceeds the top 10
 - Highlights meeting ranges with low unavoidable conflict scores
 
