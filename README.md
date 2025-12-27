@@ -22,7 +22,7 @@ The ZLP-Scheduler is designed to make these constraints visible and actionable b
    
    **_When can a 100-minute cohort meeting fit, and what tradeoffs does each possible time impose?_**
 
-Rather than optimizing for personal preferences, the scheduler evaluates time feasibility only, highlighting conflicts, restricted options, and unavoidable overlaps. It does not rank instructors, honors sections, or convenience; all courses are weighted as equal. Rather, the goal of this script is to simply determine whether and how a meeting time can fit within existing constraints.
+Rather than optimizing for personal preferences, the scheduler only evaluates which meeting times are feasible. It does not rank instructors, honors sections, or convenience; all courses are weighted as equal. Rather, the goal of this script is to simply determine whether and how a meeting time can fit between everyone's course schedules.
 
 ---
 
