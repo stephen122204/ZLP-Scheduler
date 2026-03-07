@@ -4,6 +4,8 @@ A Python CLI tool that helps the Zachry Leadership Program (ZLP) students find v
 given a set of class sections. It detects conflicts, accounts for inseparable lecture+lab bundles, and produces 
 both a terminal summary and an Excel report (heatmap + top meeting-time ranges).
 
+Google sheets input template: https://docs.google.com/spreadsheets/d/1U4JKO3G5WrCH4_zSeioiIx35_R7EQYpwbdnXa88RmQE/edit?usp=sharing
+
 ---
 
 ## Table of Contents
@@ -91,7 +93,7 @@ python zlp_scheduler.py
 <a id="spreadsheet-input-format"></a>
 ## Spreadsheet Input Format
 
-*Note:* A sample template is included in this repository titled `sections.xlsx`.
+*Note:* A sample template is included in this repository titled `sections.xlsx` and a Google sheets version link is located at the beginning of the README.
 
 **Required Columns (case-sensitive)**
 |  Column  | Example |                Notes                |
@@ -107,14 +109,13 @@ python zlp_scheduler.py
 
 If your course has a lab that must be taken with the lecture, include these columns:
 
-|    Column     | Example |              Notes              |
-|---------------|---------|---------------------------------|
-| Lab           | Y       | truthy values: Y, YES, TRUE, 1  |
-| Lab_Days      | R       | required if Lab is truthy       |
-| Lab_Start     | 15:00   | required if Lab is truthy       |
-| Lab_Duration  | 170     | required if Lab is truthy       |
+|    Column     | Example |
+|---------------|---------|
+| Lab_Days      | R       |
+| Lab_Start     | 15:00   |
+| Lab_Duration  | 170     | 
 
-**Interpretation:** Each row becomes one “Option.” If `Lab=Y`, the lecture and lab are treated as an inseparable bundle; if `Lab=N`, blank, or otherwise falsy, the row is treated as a lecture-only option and any lab columns are ignored.
+**Interpretation:** Each row becomes one “Option.” The lecture and lab are treated as an inseparable bundle. If any of the lab columns are left blank, the row is treated as a lecture-only option and any lab columns are ignored.
 
 **Important:** Time fields (`Start`, `Lab_Start`) must be entered as **plain text in 24-hour `HH:MM` format** (e.g., `13:30`). Do not use Excel's built-in time formatting, as automatic time objects are not supported.
 
