@@ -4,105 +4,87 @@ Author - Stephen Abkin, Class of 2027, Cohort J
 Date - 05/04/2025
 
 zlp_scheduler.py — ZLP 100-minute window finder with minimum conflict reporting.
-Upgrades December 19, 2025:
-  - Bundled lecture+lab sections (inseparable)
-  - Export top 10 and a heatmap to zlp_results.xlsx
-  - Print top 10 in terminal
-  - Remove obsolete manual input 
+
+Approach:
+  Slide a 100-minute window across every weekday in 5-min steps.
+  For each window position, assume students can freely re-pick sections
+  to dodge overlaps. A conflict is only "unavoidable" when *every* section
+  of a course collides with that window.
+
+Key terms:
+  - "conflict" --> unavoidable: no section avoids the window.
+  - "blocked" --> still doable but some sections are eliminated.
+  - " L" suffix --> overlap caused solely by a lab, not the lecture.
+
+Lab rule:
+  A lab is only recognized when Lab_Days, Lab_Start, and Lab_Duration
+  are ALL filled
 """
 
 from __future__ import annotations
+
 import re
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
-from copy import deepcopy
 
-# ─────────────────────────────────────────────────────────────
-# Basic constants that describe the week and the time grid
-# ─────────────────────────────────────────────────────────────
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.formatting.rule import ColorScaleRule
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
+
+# ── Time grid & validation constants ─────────────────────────
+# The window slides from 08:00 to 16:10 in 5-min increments.
+# 16:10 is the latest start where a 100-min block still ends
+# before a typical 18:00 evening cutoff.
 DAY_LETTERS = "MTWRF"
-DAY_NAMES   = {"M":"Monday","T":"Tuesday","W":"Wednesday","R":"Thursday","F":"Friday"}
+DAY_NAMES = {"M": "Monday", "T": "Tuesday", "W": "Wednesday", "R": "Thursday", "F": "Friday"}
 
-GRID_START, GRID_END = 8*60, 16*60 + 10
-BLOCK_LEN = 100
-STEP_MIN = 5
+GRID_START, GRID_END = 8 * 60, 16 * 60 + 10   # 08:00 – 16:10 in minutes
+BLOCK_LEN = 100   # ZLP meeting length (minutes)
+STEP_MIN = 5   # sliding-window step size
 
-CRS_RE  = re.compile(r"^[A-Z]{4}$")
-NUM_RE  = re.compile(r"^\d{3}[Ll]?$")
+# Regexes for validating spreadsheet cell values
+CRS_RE = re.compile(r"^[A-Z]{4}$")
+NUM_RE = re.compile(r"^\d{3}[Ll]?$")
 TIME_RE = re.compile(r"^(2[0-3]|1\d|0\d):([0-5]\d)$")
 DAYS_RE = re.compile(r"^[MTWRF]+$", re.I)
 
 DEFAULT_SHEET = "sections.xlsx"
 OUT_XLSX = "zlp_results.xlsx"
 
-# ─────────────────────────────────────────────────────────────
-# Data model: each course has multiple "options" (sections).
-# Each option can include multiple meetings (lecture + lab).
-# ─────────────────────────────────────────────────────────────
+# ── Data model ───────────────────────────────────────────────
+# A course has several Options (sections a student could pick).
+# Each Option bundles its meetings together (e.g. lecture + lab)
+# so they're treated as inseparable when checking overlaps.
 @dataclass(frozen=True)
 class Meeting:
     days: str
     start: int
     dur: int
-    label: str  # e.g., "MEEN 221" or "MEEN 221 (Lab)"
+    label: str  # e.g. "MEEN 221" or "MEEN 221L"
 
 @dataclass(frozen=True)
 class Option:
     course: str
-    meetings: Tuple[Meeting, ...]  # inseparable bundle
+    meetings: Tuple[Meeting, ...]  # all meetings you'd attend if you pick this section
 
-# ─────────────────────────────────────────────────────────────
-# Small time helpers
-# ─────────────────────────────────────────────────────────────
+# ── Time helpers ─────────────────────────────────────────────
 def to_minutes(hhmm: str) -> int:
-    return int(hhmm[:2])*60 + int(hhmm[3:])
+    return int(hhmm[:2]) * 60 + int(hhmm[3:])
 
 def to_hhmm(m: int) -> str:
-    return f"{m//60:02d}:{m%60:02d}"
+    return f"{m // 60:02d}:{m % 60:02d}"
 
-def overlaps(a:Tuple[int,int], b:Tuple[int,int]) -> bool:
-    return max(a[0],b[0]) < min(a[1],b[1])
+def overlaps(a: Tuple[int, int], b: Tuple[int, int]) -> bool:
+    """Half-open interval overlap: [a0,a1) vs [b0,b1)."""
+    return max(a[0], b[0]) < min(a[1], b[1])
 
-def merge(intvs: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    merged: List[Tuple[int, int]] = []
-    for s, e in sorted(intvs):
-        if not merged or s > merged[-1][1]:
-            merged.append((s, e))
-        else:
-            merged[-1] = (merged[-1][0], max(merged[-1][1], e))
-    return merged
-
-def free_and_min_conflict(day:List[Tuple[int,int]]):
-    free, best, mincnt = [], [], float('inf')
-    for st in range(GRID_START, GRID_END+1, STEP_MIN):
-        blk=(st, st+BLOCK_LEN)
-        cnt=sum(1 for iv in day if overlaps(blk,iv))
-        if cnt==0:
-            free.append(blk)
-        if cnt<mincnt:
-            mincnt,best=cnt,[st]
-        elif cnt==mincnt:
-            best.append(st)
-    return free,best,mincnt
-
-def format_start_span(starts: List[int]) -> str:
-    if not starts:
-        return "(none)"
-    starts = sorted(starts)
-    first = starts[0]
-    last = starts[-1]
-    if len(starts) == 1:
-        return to_hhmm(first)
-    return f"{to_hhmm(first)}–{to_hhmm(last)} (every 5 min)"
-
-# ─────────────────────────────────────────────────────────────
-# Spreadsheet load
-# Supports BOTH formats:
-#   Old columns: Subject, Number, Days, Start, Duration
-#   New columns: + Lab, Lab_Days, Lab_Start, Lab_Duration
-# Lab columns are only read/validated if Lab is truthy (Y/YES/TRUE/1).
-# ─────────────────────────────────────────────────────────────
+# ── Spreadsheet loading ─────────────────────────────────────
+# Reads .xlsx/.xls/.csv. Lab columns are optional — a lab is
+# only attached when all three Lab_* fields have values, so
+# courses without labs just leave those columns blank/missing.
 def rows_from_file(path: str) -> List[dict]:
     import pandas as pd
 
@@ -122,7 +104,7 @@ def rows_from_file(path: str) -> List[dict]:
     if miss:
         raise ValueError(f"missing columns: {', '.join(miss)}")
 
-    has_lab_cols = all(c in df.columns for c in ["Lab", "Lab_Days", "Lab_Start", "Lab_Duration"])
+    has_lab_cols = all(c in df.columns for c in ["Lab_Days", "Lab_Start", "Lab_Duration"])
 
     out: List[dict] = []
     for _, r in df.iterrows():
@@ -143,33 +125,30 @@ def rows_from_file(path: str) -> List[dict]:
             "Days": days,
             "Start": start,
             "Duration": duration,
-            "Lab": "",
             "Lab_Days": "",
             "Lab_Start": "",
             "Lab_Duration": "",
         }
 
         if has_lab_cols:
-            lab_flag = norm_cell(r["Lab"]).upper()
-            row["Lab"] = lab_flag
+            lab_days_cell  = norm_cell(r["Lab_Days"]).upper()
+            lab_start_cell = norm_cell(r["Lab_Start"])
 
-            # Only parse lab details if Lab is truthy
-            if lab_flag in {"Y", "YES", "TRUE", "1"}:
-                row["Lab_Days"] = norm_cell(r["Lab_Days"]).upper()
-                row["Lab_Start"] = norm_cell(r["Lab_Start"])
+            lab_dur_raw = r["Lab_Duration"]
+            lab_dur_cell = "" if pd.isna(lab_dur_raw) or str(lab_dur_raw).strip() == "" else str(int(float(lab_dur_raw))).strip()
 
-                lab_dur_raw = r["Lab_Duration"]
-                if pd.isna(lab_dur_raw) or str(lab_dur_raw).strip() == "":
-                    row["Lab_Duration"] = ""
-                else:
-                    row["Lab_Duration"] = str(int(float(lab_dur_raw))).strip()
+            # Lab present ONLY if all three are filled
+            if lab_days_cell and lab_start_cell and lab_dur_cell:
+                row["Lab_Days"] = lab_days_cell
+                row["Lab_Start"] = lab_start_cell
+                row["Lab_Duration"] = lab_dur_cell
 
         out.append(row)
 
     return out
 
-
-def validate_meeting(days: str, start: str, dur: str) -> Tuple[str,int,int]:
+def validate_meeting(days: str, start: str, dur: str) -> Tuple[str, int, int]:
+    """Validate and parse a meeting spec: days, start HH:MM, duration minutes."""
     days = days.upper()
     if not DAYS_RE.fullmatch(days):
         raise ValueError("days must be combo of MTWRF")
@@ -181,12 +160,9 @@ def validate_meeting(days: str, start: str, dur: str) -> Tuple[str,int,int]:
     return days, st, int(dur)
 
 def add_row_as_option(row: dict, sections: Dict[str, List[Option]]) -> bool:
-    """
-    Adds ONE spreadsheet row as ONE "Option" for a course.
-    If Lab=Y, bundles lab meeting into the same Option.
-    """
+    """Parse one spreadsheet row into an Option (with bundled lab if present)."""
     subj = row["Subject"]
-    num  = row["Number"]
+    num = row["Number"]
     code = f"{subj} {num}"
 
     try:
@@ -196,13 +172,12 @@ def add_row_as_option(row: dict, sections: Dict[str, List[Option]]) -> bool:
         lec_days, lec_st, lec_dur = validate_meeting(row["Days"], row["Start"], row["Duration"])
         meetings: List[Meeting] = [Meeting(lec_days, lec_st, lec_dur, code)]
 
-        lab_flag = str(row.get("Lab","")).strip().upper()
-        if lab_flag in {"Y","YES","TRUE","1"}:
-            lab_days = str(row.get("Lab_Days","")).strip().upper()
-            lab_start = str(row.get("Lab_Start","")).strip()
-            lab_dur = str(row.get("Lab_Duration","")).strip()
-            if not (lab_days and lab_start and lab_dur):
-                raise ValueError("Lab=Y but lab fields are missing (Lab_Days/Lab_Start/Lab_Duration)")
+        # Bundle the lab into this option only when all three fields exist
+        lab_days  = str(row.get("Lab_Days", "")).strip().upper()
+        lab_start = str(row.get("Lab_Start", "")).strip()
+        lab_dur   = str(row.get("Lab_Duration", "")).strip()
+
+        if lab_days and lab_start and lab_dur:
             ld, ls, ldur = validate_meeting(lab_days, lab_start, lab_dur)
             meetings.append(Meeting(ld, ls, ldur, f"{code} (Lab)"))
 
@@ -213,174 +188,118 @@ def add_row_as_option(row: dict, sections: Dict[str, List[Option]]) -> bool:
         print(f"Error in {code}: {err}")
         return False
 
-# ─────────────────────────────────────────────────────────────
-# Scheduling scoring + optimistic conflict check (now option-aware)
-# ─────────────────────────────────────────────────────────────
-def windows_after_add(
-    cand: Option,
-    grid:Dict[str,List[Tuple[int,int]]],
-    grid_raw:Dict[str,List[Tuple[int,int,str]]]
-) -> Tuple[int,int]:
-    tmp = deepcopy(grid)
-    tmp_raw = deepcopy(grid_raw)
-
-    # add all meetings in this option (lecture + lab)
-    for mtg in cand.meetings:
-        iv = (mtg.start, mtg.start + mtg.dur)
-        for d in mtg.days:
-            tmp[d].append(iv)
-            tmp[d] = merge(tmp[d])
-            tmp_raw[d].append((iv[0], iv[1], cand.course))
-
-    total_free = 0
-    total_min_conf = 0
-    for d in DAY_LETTERS:
-        free, _, _ = free_and_min_conflict(tmp[d])
-        total_free += len(free)
-
-        # label-aware min conflicts sweep
-        mincnt = min(
-            sum(1 for s,e,_ in tmp_raw[d] if overlaps((s,e),(st2,st2+BLOCK_LEN)))
-            for st2 in range(GRID_START, GRID_END+1, STEP_MIN)
-        )
-        total_min_conf += mincnt
-
-    return total_free, total_min_conf
-
-def option_has_nonoverlap_on_day(opt: Option, day_letter: str, blk: Tuple[int,int]) -> bool:
-    """
-    True if this option can exist on this day without overlapping the block.
-    If the option has no meetings on that day, it's trivially OK.
-    If it has meetings on that day, ALL of them must not overlap the block.
-    """
-    day_meetings = [m for m in opt.meetings if day_letter in m.days]
-    if not day_meetings:
-        return True
-    for m in day_meetings:
-        if overlaps((m.start, m.start + m.dur), blk):
-            return False
-    return True
-
-def adjusted_conflicts_for_start(
-    st: int,
-    day_labeled: List[Tuple[int,int,str]],
-    sections_all: Dict[str, List[Option]],
-    day_letter: str
-) -> List[Tuple[str,int,int]]:
-    """
-    Optimistic check:
-    - Find all courses that overlap the block on this day (raw hits).
-    - If that course has some OTHER option that avoids overlapping this day/block
-      (including bundled lab), then treat it as movable and don't count it.
-    """
-    blk = (st, st + BLOCK_LEN)
-
-    raw_hits = [(code, s, e) for (s, e, code) in day_labeled if overlaps((s, e), blk)]
-    remaining: List[Tuple[str,int,int]] = []
-
-    for code, s, e in raw_hits:
-        movable = False
-        if code in sections_all:
-            for opt in sections_all[code]:
-                # if some option for this course avoids overlap on this day, it's movable
-                if option_has_nonoverlap_on_day(opt, day_letter, blk):
-                    movable = True
-                    break
-        if not movable:
-            remaining.append((code, s, e))
-
-    return remaining
-
+# ── Overlap detection ────────────────────────────────────────
+# Because lecture + lab are bundled in the same Option, checking
+# any meeting in the bundle catches both kinds of collision.
 def option_overlaps_block(opt: Option, day: str, blk: Tuple[int, int]) -> bool:
-    """
-    True if this option has any meeting on 'day' that overlaps blk.
-    Labs are already bundled into opt.meetings, so this respects inseparability.
-    """
+    """Does any meeting in this option collide with the block on this day?"""
     for m in opt.meetings:
-        if day in m.days:
-            if overlaps((m.start, m.start + m.dur), blk):
-                return True
+        if day in m.days and overlaps((m.start, m.start + m.dur), blk):
+            return True
     return False
 
-def best_conflicts_for_block(
-    day: str,
-    st: int,
-    sections_all: Dict[str, List[Option]]
-) -> Tuple[int, List[str]]:
+# ── Lab-only labeling ────────────────────────────────────────
+# When an overlap is caused exclusively by a lab (not the
+# lecture), we append " L" so the user knows the conflict
+# might be resolvable by swapping lab sections alone.
+def is_lab_meeting(m: Meeting) -> bool:
+    return "(LAB)" in m.label.upper()
+
+def overlap_type_for_option(opt: Option, day: str, blk: Tuple[int, int]) -> Tuple[bool, bool]:
     """
-    For a fixed meeting block (day, st..st+BLOCK_LEN), compute the minimum possible
-    number of conflicting courses assuming we can re-pick one option per course
-    specifically for this start time.
-
-    A course is an unavoidable conflict if every option overlaps the meeting block.
-    Returns (score, sorted_conflict_courses).
+    Returns (lec_overlaps, lab_overlaps) for this option on this day/block.
     """
-    blk = (st, st + BLOCK_LEN)
-    conflicts: List[str] = []
+    lec_overlaps = False
+    lab_overlaps = False
+    for m in opt.meetings:
+        if day in m.days and overlaps((m.start, m.start + m.dur), blk):
+            if is_lab_meeting(m):
+                lab_overlaps = True
+            else:
+                lec_overlaps = True
+    return lec_overlaps, lab_overlaps
 
-    for course, opts in sections_all.items():
-        can_avoid = any(not option_overlaps_block(opt, day, blk) for opt in opts)
-        if not can_avoid:
-            conflicts.append(course)
+def should_mark_lab_only(course: str, day: str, blk: Tuple[int, int], sections_all: Dict[str, List[Option]], mode: str) -> bool:
+    """Return True when every overlapping option collides only via its lab."""
+    opts = sections_all.get(course, [])
+    if not opts:
+        return False
 
-    conflicts = sorted(set(conflicts))
-    return len(conflicts), conflicts
+    info: List[Tuple[bool, bool, bool]] = []
+    for opt in opts:
+        lec_ov, lab_ov = overlap_type_for_option(opt, day, blk)
+        ov = lec_ov or lab_ov
+        info.append((ov, lec_ov, lab_ov))
 
-# blocked courses are those that lose at least one option but are not full conflicts (LOGIC)
+    if mode == "conflict":
+        # All options overlap; mark lab-only only if every overlap is lab-only
+        if not all(ov for (ov, _, _) in info):
+            return False
+        return all((not lec_ov) and lab_ov for (_, lec_ov, lab_ov) in info)
+
+    if mode == "blocked":
+        # Some overlap + some clear; mark lab-only if ALL overlapping options are lab-only
+        any_overlap = any(ov for (ov, _, _) in info)
+        any_clear = any((not ov) for (ov, _, _) in info)
+        if not (any_overlap and any_clear):
+            return False
+        overlapping = [(lec_ov, lab_ov) for (ov, lec_ov, lab_ov) in info if ov]
+        return all((not lec_ov) and lab_ov for (lec_ov, lab_ov) in overlapping)
+
+    return False
+
+# ── Per-block scoring ────────────────────────────────────────
+# For one candidate window, classify every course as clear,
+# blocked (some sections lost), or unavoidable conflict (all
+# sections lost). The "score" is the count of unavoidable ones.
 def best_conflicts_and_blocked_for_block(
     day: str,
     st: int,
     sections_all: Dict[str, List[Option]]
 ) -> Tuple[int, List[str], List[str]]:
-    """
-    For a fixed meeting block, compute:
-      - score: minimum unavoidable conflicts (courses where every option overlaps)
-      - conflicts: those unavoidable conflict courses (subject+number)
-      - blocked: courses that remain doable but lose at least one option due to overlap
-
-    Blocked means: at least one option overlaps AND at least one option does not overlap.
-    """
     blk = (st, st + BLOCK_LEN)
 
-    conflicts: List[str] = []
-    blocked: List[str] = []
+    conflicts_raw: List[str] = []
+    blocked_raw: List[str] = []
 
     for course, opts in sections_all.items():
         any_overlap = any(option_overlaps_block(opt, day, blk) for opt in opts)
-        any_clear   = any(not option_overlaps_block(opt, day, blk) for opt in opts)
+        any_clear = any(not option_overlaps_block(opt, day, blk) for opt in opts)
 
         if not any_clear:
-            # Every option overlaps -> unavoidable conflict
-            conflicts.append(course)
+            conflicts_raw.append(course)
         elif any_overlap:
-            # Still possible, but choices are restricted
-            blocked.append(course)
+            blocked_raw.append(course)
 
-    conflicts = sorted(set(conflicts))
-    blocked = sorted(set(blocked))
-    return len(conflicts), conflicts, blocked
+    conflicts_raw = sorted(set(conflicts_raw))
+    blocked_raw = sorted(set(blocked_raw))
 
-# ─────────────────────────────────────────────────────────────
-# Reporting: top 10 + heatmap spreadsheet
-# ─────────────────────────────────────────────────────────────
-def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
-    """
-    Meeting-time-centric reporting.
+    conflicts: List[str] = []
+    for c in conflicts_raw:
+        if should_mark_lab_only(c, day, blk, sections_all, mode="conflict"):
+            conflicts.append(f"{c} L")
+        else:
+            conflicts.append(c)
 
-    For each candidate (day, start), we re-pick course options independently to
-    minimize conflicts with the 100-minute meeting block.
+    blocked: List[str] = []
+    for c in blocked_raw:
+        if should_mark_lab_only(c, day, blk, sections_all, mode="blocked"):
+            blocked.append(f"{c} L")
+        else:
+            blocked.append(c)
 
-    Outputs:
-      - Terminal: all contiguous ranges with score <= 2; if fewer than 10, fills with next best ranges
-      - Excel: one sheet with Heatmap (time rows, day cols) + table starting at column H
-      - Table includes unavoidable conflicting courses (subject + number) for that block
-      - Table includes blocked courses and a blocked count column
-    """
-    import pandas as pd
-    from openpyxl import load_workbook
-    from openpyxl.formatting.rule import ColorScaleRule
-    from openpyxl.styles import Alignment, Font
-    from openpyxl.utils import get_column_letter
+    return len(conflicts_raw), conflicts, blocked
+
+# ── Report generation ────────────────────────────────────────
+# Builds two outputs:
+#   1. Terminal printout of the best contiguous start-time ranges.
+#   2. Excel workbook with a color-scaled heatmap (rows=times,
+#      cols=days) and a ranked table of top windows (col H+).
+def generate_reports(
+    sections_all: Dict[str, List[Option]],
+    sheet_name: str = "ScheduleData",
+    title: str = ""
+) -> None:
 
     starts = list(range(GRID_START, GRID_END + 1, STEP_MIN))
     time_rows = [to_hhmm(s) for s in starts]
@@ -407,10 +326,7 @@ def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
         score: int,
         st_list: List[int]
     ) -> List[Tuple[int, int, str, int, int, int, str, int, str]]:
-        """
-        Tuple:
-          (score, -count, day, first_start, last_start, count, conflicts_str, blocked_count, blocked_str)
-        """
+        """Merge adjacent 5-min starts into contiguous ranges for cleaner output.""" 
         st_list = sorted(st_list)
         out: List[Tuple[int, int, str, int, int, int, str, int, str]] = []
         if not st_list:
@@ -428,9 +344,7 @@ def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
                 blocked_list = blocked_map[(day, first)]
                 blocked_count = len(blocked_list)
                 blocked_str = ", ".join(blocked_list)
-
                 out.append((score, -count, day, first, prev, count, conflicts_str, blocked_count, blocked_str))
-
                 first = prev = x
                 count = 1
 
@@ -438,54 +352,64 @@ def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
         blocked_list = blocked_map[(day, first)]
         blocked_count = len(blocked_list)
         blocked_str = ", ".join(blocked_list)
-
         out.append((score, -count, day, first, prev, count, conflicts_str, blocked_count, blocked_str))
         return out
 
-    # Build ranges across all days and all scores
     ranges: List[Tuple[int, int, str, int, int, int, str, int, str]] = []
     for d in DAY_LETTERS:
         by_score: Dict[int, List[int]] = {}
         for s in starts:
             sc = score_map[(d, s)]
             by_score.setdefault(sc, []).append(s)
-
         for sc, st_list in by_score.items():
             ranges.extend(group_contiguous_starts(d, sc, st_list))
 
-    # Sort: score -> #blocked -> earlier start -> earlier day:
     ranges.sort(key=lambda t: (t[0], t[7], t[3], DAY_LETTERS.index(t[2])))
 
-    # Selection rule: include all score <= 2; if fewer than 10, fill with next best
     selected = [t for t in ranges if t[0] <= 2]
     if len(selected) < 10:
         need = 10 - len(selected)
         extras = [t for t in ranges if t[0] > 2]
         selected.extend(extras[:need])
 
-    # Terminal print
-    print("\nMeeting start-time ranges (contiguous, per-start optimized):")
+    print(f"\n=== Meeting start-time ranges {title} ===")
     print("Includes all ranges with score <= 2; if fewer than 10, filled with next best ranges.\n")
-
-    for i, (score, _, d, first, last, count, conflicts_str, blocked_count, blocked_str) in enumerate(selected, 1):
-        if first == last:
-            start_range = to_hhmm(first)
-        else:
-            start_range = f"{to_hhmm(first)}–{to_hhmm(last)}"
-
+    for i, (score, _, d, first, last, _, _, _, _) in enumerate(selected, 1):
+        start_range = to_hhmm(first) if first == last else f"{to_hhmm(first)}–{to_hhmm(last)}"
         print(f"{i:2d}. {DAY_NAMES[d]:9s}   start: {start_range}    score={score}")
 
-    # Write one sheet
     out_path = Path(__file__).with_name(OUT_XLSX)
-    with pd.ExcelWriter(out_path, engine="openpyxl") as w:
-        df_heat.to_excel(w, sheet_name="ScheduleData")
+
+    def write_fresh():
+        with pd.ExcelWriter(out_path, engine="openpyxl") as w:
+            df_heat.to_excel(w, sheet_name=sheet_name)
+
+    # If the file exists but is corrupt, catch the error and recreate it
+    if out_path.exists():
+        try:
+            wb_existing = load_workbook(out_path)
+            if sheet_name in wb_existing.sheetnames:
+                del wb_existing[sheet_name]
+                wb_existing.save(out_path)
+
+            with pd.ExcelWriter(out_path, engine="openpyxl", mode="a") as w:
+                df_heat.to_excel(w, sheet_name=sheet_name)
+
+        except Exception as e:
+            print(f"[xlsx warning] {out_path.name} is not a valid .xlsx ({e}). Recreating.")
+            try:
+                out_path.unlink()
+            except Exception:
+                pass
+            write_fresh()
+    else:
+        write_fresh()
 
     wb = load_workbook(out_path)
-    ws = wb["ScheduleData"]
+    ws = wb[sheet_name]
 
     center = Alignment(horizontal="center", vertical="center")
 
-    # Heatmap formatting
     ws.freeze_panes = "B2"
     ws.cell(row=1, column=1).font = Font(bold=True)
     ws.cell(row=1, column=1).alignment = center
@@ -507,7 +431,6 @@ def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
         for r in range(2, 2 + len(time_rows)):
             ws.cell(row=r, column=c).alignment = center
 
-    # Conditional formatting (B2..F last)
     start_cell = ws.cell(row=2, column=2).coordinate
     end_cell = ws.cell(row=1 + len(time_rows), column=1 + len(DAY_LETTERS)).coordinate
     rng = f"{start_cell}:{end_cell}"
@@ -519,11 +442,9 @@ def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
     )
     ws.conditional_formatting.add(rng, rule)
 
-    # Top table at column H
     top_col = 8  # H
     top_row = 1
 
-    # Clear prior table area
     max_clear_rows = 300
     max_clear_cols = 20
     for rr in range(top_row, top_row + max_clear_rows):
@@ -535,7 +456,6 @@ def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
         "Range length (starts)", "Score (conflicts)",
         "Conflicting courses", "# Blocked Courses", "Blocked courses"
     ]
-
     for j, h in enumerate(headers):
         cell = ws.cell(row=top_row, column=top_col + j, value=h)
         cell.font = Font(bold=True)
@@ -571,22 +491,16 @@ def generate_reports(sections_all: Dict[str, List[Option]]) -> None:
         ws.column_dimensions[get_column_letter(top_col + j)].width = w
 
     wb.save(out_path)
-    print(f"\nExcel report written to: {out_path}")
+    print(f"\nExcel report updated: {out_path} (sheet: {sheet_name})")
 
-
-# ─────────────────────────────────────────────────────────────
-# Main
-# ─────────────────────────────────────────────────────────────
+# ── Entry point ──────────────────────────────────────────────
 def main() -> None:
     sections: Dict[str, List[Option]] = {}
 
-    # 1) Auto-load sections.xlsx in same folder, else ask for a path and require it
     def_sheet = Path(__file__).with_name(DEFAULT_SHEET)
-    path_to_use: Optional[Path] = None
+    path_to_use: Optional[Path] = def_sheet if def_sheet.exists() else None
 
-    if def_sheet.exists():
-        path_to_use = def_sheet
-    else:
+    if not path_to_use:
         p = input("Spreadsheet path (.xlsx/.csv): ").strip()
         if p:
             path_to_use = Path(p)
@@ -609,11 +523,7 @@ def main() -> None:
         print(f"[file-load error] {e}")
         return
 
-    # keep all options for optimistic check
-    sections_all = sections
+    generate_reports(sections, sheet_name="ScheduleData", title="(all courses equal)")
 
-    # 2) Generate reports
-    generate_reports(sections_all)
-
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
