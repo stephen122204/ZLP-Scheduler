@@ -131,7 +131,7 @@ def rows_from_file(path: str) -> List[dict]:
         }
 
         if has_lab_cols:
-            lab_days_cell  = norm_cell(r["Lab_Days"]).upper()
+            lab_days_cell = norm_cell(r["Lab_Days"]).upper()
             lab_start_cell = norm_cell(r["Lab_Start"])
 
             lab_dur_raw = r["Lab_Duration"]
@@ -173,9 +173,9 @@ def add_row_as_option(row: dict, sections: Dict[str, List[Option]]) -> bool:
         meetings: List[Meeting] = [Meeting(lec_days, lec_st, lec_dur, code)]
 
         # Bundle the lab into this option only when all three fields exist
-        lab_days  = str(row.get("Lab_Days", "")).strip().upper()
+        lab_days = str(row.get("Lab_Days", "")).strip().upper()
         lab_start = str(row.get("Lab_Start", "")).strip()
-        lab_dur   = str(row.get("Lab_Duration", "")).strip()
+        lab_dur = str(row.get("Lab_Duration", "")).strip()
 
         if lab_days and lab_start and lab_dur:
             ld, ls, ldur = validate_meeting(lab_days, lab_start, lab_dur)
